@@ -241,7 +241,7 @@ h3 { font-size: 23px; }
   font-weight: 750;
   text-decoration: none;
   cursor: pointer;
-  transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+  transition: transform 160ms ease;
 }
 .button:hover { transform: translateY(-1px); }
 .button:active { transform: translateY(1px); }

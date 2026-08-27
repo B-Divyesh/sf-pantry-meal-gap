@@ -578,9 +578,18 @@ function exportBackup(): void {
 function validImportedState(value: unknown): value is AppState {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<AppState>;
+  const validUnit = (unit: unknown): unit is Unit => typeof unit === 'string' && UNITS.includes(unit as Unit);
   return Array.isArray(candidate.pantry) && Array.isArray(candidate.meals) && Array.isArray(candidate.shopping) && Array.isArray(candidate.history)
-    && candidate.meals.every((meal) => meal && typeof meal.name === 'string' && Array.isArray(meal.ingredients))
-    && candidate.pantry.every((item) => item && typeof item.name === 'string' && typeof item.quantity === 'number');
+    && candidate.meals.every((meal) => meal && typeof meal.id === 'string' && typeof meal.name === 'string' && Array.isArray(meal.ingredients)
+      && meal.ingredients.every((ingredient) => ingredient && typeof ingredient.id === 'string' && typeof ingredient.name === 'string'
+        && typeof ingredient.quantity === 'number' && ingredient.quantity > 0 && validUnit(ingredient.unit)
+        && Array.isArray(ingredient.substitutions) && ingredient.substitutions.every((swap) => typeof swap === 'string')))
+    && candidate.pantry.every((item) => item && typeof item.id === 'string' && typeof item.name === 'string'
+      && typeof item.quantity === 'number' && item.quantity > 0 && validUnit(item.unit))
+    && candidate.shopping.every((item) => item && typeof item.id === 'string' && typeof item.name === 'string'
+      && typeof item.quantity === 'number' && item.quantity > 0 && validUnit(item.unit) && typeof item.checked === 'boolean')
+    && candidate.history.every((entry) => entry && typeof entry.id === 'string' && typeof entry.mealName === 'string'
+      && typeof entry.gapCount === 'number' && typeof entry.createdAt === 'number');
 }
 
 async function importBackup(event: Event): Promise<void> {
@@ -605,13 +614,14 @@ async function importBackup(event: Event): Promise<void> {
 function toggleTheme(): void {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
-  localStorage.setItem('pantry-meal-gap-theme', next);
+  try { localStorage.setItem('pantry-meal-gap-theme', next); } catch { /* Theme persistence is optional. */ }
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#111814' : '#f3eedf');
   announce(`${titleCase(next)} field map enabled.`);
 }
 
 function applySavedTheme(): void {
-  const saved = localStorage.getItem('pantry-meal-gap-theme');
+  let saved: string | null = null;
+  try { saved = localStorage.getItem('pantry-meal-gap-theme'); } catch { /* Use the system theme when storage is blocked. */ }
   const theme = saved === 'light' || saved === 'dark' ? saved : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   document.documentElement.dataset.theme = theme;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#111814' : '#f3eedf');
