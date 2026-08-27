@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Pantry Meal Gap contour waypoint mark">
+  <rect width="512" height="512" rx="112" fill="#f3eedf"/>
+  <path d="M93 310c-23-71 9-158 79-200 65-39 161-30 210 26 52 59 53 155 2 218-47 57-142 74-209 39-36-19-68-48-82-83Z" fill="none" stroke="#174b3b" stroke-width="17"/>
+  <path d="M130 296c-17-52 7-116 58-147 48-29 118-22 154 19 38 43 39 114 1 160-34 42-104 54-153 29-27-14-50-35-60-61Z" fill="none" stroke="#174b3b" stroke-width="13"/>
+  <path d="M174 282c-11-34 5-76 38-96 31-19 77-14 100 12 25 29 25 75 1 105-23 27-68 35-100 19-18-9-33-23-39-40Z" fill="none" stroke="#174b3b" stroke-width="10"/>
+  <circle cx="371" cy="357" r="49" fill="#b83d22" stroke="#f3eedf" stroke-width="16"/>
+  <circle cx="371" cy="357" r="14" fill="#f3eedf"/>
+</svg>

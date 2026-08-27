@@ -1,0 +1,14 @@
+{
+  "slug": "pantry-meal-gap",
+  "title": "Pantry Meal Gap",
+  "territory": "utilities",
+  "user": "A home cook deciding dinner from imperfect on-hand ingredients who needs to see the smallest missing shopping list, not an idealized recipe catalog.",
+  "current_workaround": "Search recipes, mentally substitute ingredients, then make an ad-hoc grocery list.",
+  "smallest_useful_product": "Local ingredient list, 20 manually entered staple meals, match score, acceptable substitutions, and auto-generated missing-items list.",
+  "non_goals": ["image recognition", "web recipe scraping", "grocery delivery", "meal-plan AI"],
+  "success_measure": "In a four-week pilot, users choose a meal from the tool at least twice weekly and accept the generated missing list without editing in 60% of uses.",
+  "artifact_class": "pwa-offline",
+  "monetization": "free",
+  "constraints": "No copyrighted recipe ingestion; users enter their own meal templates; quantities and allergy suitability are user responsibility.",
+  "why_distinct": "It answers ‘what can I make with one small gap?’ rather than generating recipes or maintaining a full food database."
+}
