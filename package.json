@@ -1,0 +1,23 @@
+{
+  "name": "pantry-meal-gap",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run tests/*.test.ts && npm run build && playwright test",
+    "test:unit": "vitest run tests/*.test.ts",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "22.20.1",
+    "axe-core": "^4.10.2",
+    "sharp": "^0.35.4",
+    "typescript": "5.7.2",
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
+  }
+}
