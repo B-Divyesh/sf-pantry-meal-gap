@@ -3,7 +3,7 @@
 - Work order: `pantry-meal-gap-repair-2`
 - Repair base: verifier report commit `9819d47f300832ec59d737fd22926665f16c1b42`; candidate `efb3fc9de68a71afe88bcdf448b99f6e835c3cf0`
 - Artifact: static, local-first PWA; build artifact: `dist/`
-- Status: repair built and fully tested locally; deployment evidence follows the production upload.
+- Status: deployed and verified at <https://pantry-meal-gap.sociobot.in/>.
 
 ## Repair completed
 
@@ -23,6 +23,15 @@
 - Offline/update: the browser suite passed offline reload after a service-worker-controlled first visit, showing “Offline field mode.” The cache revision is intentionally changed for this release so the established update-message branch is activated on existing installs.
 - Lighthouse mobile, production preview, Playwright Chromium: run 1 **Performance 98**, Accessibility/Best Practices/SEO **100** (FCP 1.0 s, LCP 1.7 s, TBT 140 ms, CLS 0); repeat **Performance 100**, Accessibility/Best Practices/SEO **100** (FCP 0.9 s, LCP 1.8 s, TBT 0 ms, CLS 0).
 - Privacy/response policy: no product data leaves IndexedDB; theme remains localStorage; no analytics, third-party scripts, CDN fonts, or runtime APIs were introduced. `staticwebapp.config.json` remains the deployment source for the same-origin CSP, security headers, manifest MIME, immutable hashed assets, and no-store service-worker cache policy.
+
+## Deployment and live evidence (2026-08-28)
+
+- Deployed `d311e594f26771170d6cdefde9b741eabcf9c43c` with `/opt/fleet/lib/deploy-static.sh pantry-meal-gap /work/repo/dist`. Azure Static Web Apps accepted `public/staticwebapp.config.json`; the custom HTTPS domain returned 200.
+- Live artifact identity matched local `dist/` SHA-256 exactly for `index.html` (`7475eaf7…`), `assets/main-C4ZCfHWd.js` (`43d240e6…`), `assets/main-CnYzW7j2.css` (`92ad0d8a…`), and `sw.js` (`23e5b967…`).
+- `/opt/fleet/lib/verify-url.sh` on the live URL passed: HTTPS 200 in 854 ms, title and `lang=en`, one `<h1>`, a `<main>`, zero missing image alts, zero unlabelled buttons, and zero browser errors. Live headers enforce the same-origin CSP, `X-Frame-Options: DENY`, COOP, Permissions-Policy, nosniff, strict referrer policy, no-store service-worker caching, and the `application/manifest+json` manifest MIME.
+- Fresh live Chromium at 390×844 imported the verifier’s exact malformed JSON, received the invalid-backup message, then reloaded with its prior pantry row intact. It had `scrollWidth === innerWidth === 390`, a service-worker controller, no console/page errors, and requests only to `https://pantry-meal-gap.sociobot.in`.
+- Fresh live Chromium passed controlled offline reload with the heading and “Offline field mode.” present and no errors. A disposable server serving the built artifact changed only worker bytes and `registration.update()` displayed “The offline map was updated.” without errors.
+- Live mobile Lighthouse 13.4.1 using the installed Playwright Chromium: **Performance 95**, Accessibility **100**, Best Practices **100**, SEO **100** (FCP 0.9 s, LCP 1.4 s, TBT 260 ms, CLS 0). This clears the verifier’s ≥90 performance release gate.
 
 ## How to run
 
