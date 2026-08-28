@@ -3,7 +3,7 @@
 - Work order: `pantry-meal-gap-repair-1`
 - Repair base: verifier report commit `68ecfef71a44f1daffe0351fc1dcafcdb24871e2`, candidate `06a179381f0e6f42eb98fc45b7fcc5ef506633d3`
 - Artifact: static, local-first PWA; build artifact: `dist/`
-- Status: ready for static deployment and post-deploy identity/response-policy verification
+- Status: deployed and verified at `https://pantry-meal-gap.sociobot.in/`
 
 ## Repair completed
 
