@@ -23,9 +23,16 @@
 - Keyboard: Tab reached “Skip to main content” with a 3px outline; keyboard entry and Enter added “Keyboard Beans”.
 - Offline: `npx playwright test tests/e2e/app.spec.ts -g 'reloads the complete app while offline'` — **1/1 passed** after a first service-worker-controlled visit.
 
-## Deployment and live evidence
+## Deployment and live evidence (2026-08-28)
 
-The static deploy, live identity comparison, response headers, service-worker update path, and final URL audit are performed after this repair commit is pushed. Append those exact results here after the deployment; no application behavior beyond the documented accessibility/semantic/touch-policy repairs has changed.
+- Deployed `f5c3420a771b1eaf99ef8d8ef300d5fc6655efa3` with `/opt/fleet/lib/deploy-static.sh pantry-meal-gap /work/repo/dist` to <https://pantry-meal-gap.sociobot.in/>. Azure Static Web Apps accepted `public/staticwebapp.config.json` during deployment.
+- `/opt/fleet/lib/verify-url.sh https://pantry-meal-gap.sociobot.in/ …` returned HTTPS **200** in **988 ms**, with no console/page errors, title present, `lang=en`, one `<h1>`, a `<main>`, zero images missing `alt`, and zero unlabelled buttons.
+- A fresh live Chromium context (desktop then 390×844) opened Add your meal: all **12** initial input/select controls had matching labels and `axe.run('#meal-dialog')` returned **0 violations**. It also confirmed 390px width without overflow, a service-worker controller, Tab focus on “Skip to main content” with a 3px outline, offline reload showing “Offline field mode.”, no console/page errors, and no requested origin other than `https://pantry-meal-gap.sociobot.in`.
+- Live policy response checks: `/assets/main-CE-wIgn4.js` has `Cache-Control: public, max-age=31536000, immutable`; `/sw.js` has `no-cache, no-store, must-revalidate`; `/manifest.webmanifest` has `Content-Type: application/manifest+json` and `Cache-Control: no-cache`. Root and assets return the enforcing CSP, `X-Frame-Options: DENY`, `Cross-Origin-Opener-Policy: same-origin`, Permissions-Policy, `X-Content-Type-Options: nosniff`, and strict referrer policy.
+- Artifact identity check: SHA-256 matched local `dist/` and the live response for `index.html`, `main-CE-wIgn4.js`, `main-CnYzW7j2.css`, `sw.js`, and `manifest.webmanifest`.
+- Update path: a disposable localhost production-artifact server first served the deployed worker and then only changed its served worker bytes. `registration.update()` displayed “The offline map was updated. Reload”, confirming the in-app update notification still functions with the new worker cache policy.
+
+No application behavior beyond the documented accessibility/semantic/touch-policy repairs has changed.
 
 ## How to run
 
