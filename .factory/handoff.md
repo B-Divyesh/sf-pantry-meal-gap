@@ -26,7 +26,7 @@
 
 ## Deployment and live evidence (2026-08-28)
 
-- Deployed `d311e594f26771170d6cdefde9b741eabcf9c43c` with `/opt/fleet/lib/deploy-static.sh pantry-meal-gap /work/repo/dist`. Azure Static Web Apps accepted `public/staticwebapp.config.json`; the custom HTTPS domain returned 200.
+- Deployed `d311e597e06ebe4192bdceae454cb11e6a1ce7dc` with `/opt/fleet/lib/deploy-static.sh pantry-meal-gap /work/repo/dist`. Azure Static Web Apps accepted `public/staticwebapp.config.json`; the custom HTTPS domain returned 200.
 - Live artifact identity matched local `dist/` SHA-256 exactly for `index.html` (`7475eaf7…`), `assets/main-C4ZCfHWd.js` (`43d240e6…`), `assets/main-CnYzW7j2.css` (`92ad0d8a…`), and `sw.js` (`23e5b967…`).
 - `/opt/fleet/lib/verify-url.sh` on the live URL passed: HTTPS 200 in 854 ms, title and `lang=en`, one `<h1>`, a `<main>`, zero missing image alts, zero unlabelled buttons, and zero browser errors. Live headers enforce the same-origin CSP, `X-Frame-Options: DENY`, COOP, Permissions-Policy, nosniff, strict referrer policy, no-store service-worker caching, and the `application/manifest+json` manifest MIME.
 - Fresh live Chromium at 390×844 imported the verifier’s exact malformed JSON, received the invalid-backup message, then reloaded with its prior pantry row intact. It had `scrollWidth === innerWidth === 390`, a service-worker controller, no console/page errors, and requests only to `https://pantry-meal-gap.sociobot.in`.
