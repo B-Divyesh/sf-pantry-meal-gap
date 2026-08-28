@@ -1,4 +1,14 @@
-# Pantry Meal Gap — build handoff
+# Pantry Meal Gap — independent verification handoff: **FAIL**
+
+## Latest verification (2026-08-27)
+
+Candidate `06a179381f0e6f42eb98fc45b7fcc5ef506633d3` was independently tested locally and at `https://pantry-meal-gap.sociobot.in/`. **FAIL:** the Add/Edit custom-meal dialog has axe critical `label` (6 controls) and `select-name` (3 controls) violations. The form's visible labels are not programmatically associated with their fields. This is a release blocker under the required serious/critical axe gate.
+
+All 6 unit tests, all 7 repository Playwright tests, typecheck, production build, live core flow, persistence, offline reload, PWA update toast, keyboard smoke test, and live byte-identity comparison passed. The deployment also has non-blocking but material response-policy/cache issues: no enforcing CSP/frame policy, 30-second non-immutable caching for hashed assets, and an octet-stream manifest. See `.factory/verification.md` for exact commands, evidence, severity, and retest criteria.
+
+No product code was modified by this verifier. The verification documentation is the only change.
+
+---
 
 - Work order: `pantry-meal-gap-build-1`
 - Completed: 2026-08-27
