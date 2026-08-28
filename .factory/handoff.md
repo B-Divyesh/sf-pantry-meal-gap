@@ -1,52 +1,44 @@
-# Pantry Meal Gap — repair handoff
+# Pantry Meal Gap — independent verification handoff
 
-- Work order: `pantry-meal-gap-repair-1`
-- Repair base: verifier report commit `68ecfef71a44f1daffe0351fc1dcafcdb24871e2`, candidate `06a179381f0e6f42eb98fc45b7fcc5ef506633d3`
-- Artifact: static, local-first PWA; build artifact: `dist/`
-- Status: deployed and verified at `https://pantry-meal-gap.sociobot.in/`
+- Work order: `pantry-meal-gap-verify-2`
+- Candidate tested: `efb3fc9de68a71afe88bcdf448b99f6e835c3cf0`
+- Live URL: <https://pantry-meal-gap.sociobot.in/>
+- Verification date: 2026-08-28
+- Verdict: **FAIL**
 
-## Repair completed
+The live application is byte-identical to the candidate production build, and its normal pantry-to-meal workflow, PWA offline reload/update, privacy posture, headers, responsive layout, and repaired dialog accessibility checks pass. It is not releasable because malformed-but-accepted backup JSON can persist invalid state and make the next reload show only the loading screen with an uncaught error. The current app supplies no in-product recovery path.
 
-- Corrected the release-blocking custom-meal accessibility defect at its renderer: every ingredient, amount, unit, and acceptable-swap control now receives a unique generated `id` and a matching visible `<label for>`. The initial three rows and every subsequently added row are covered.
-- Added a Playwright regression that opens the dialog, asserts the accessible names for all initial controls and a newly added fourth row, then runs axe against the open dialog. The dialog now has **zero axe violations**, including zero serious/critical findings.
-- Fixed the verifier's initial-screen landmark finding by changing the nested data-panel `aside` to a labelled section; no complementary landmark remains nested inside the shopping section.
-- Made the three footer legal/source links 44px-high touch targets.
-- Added `public/staticwebapp.config.json`, which Vite copies into `dist/`, for Azure Static Web Apps. It adds enforcing CSP (`default-src 'self'`, `frame-ancestors 'none'`), `X-Frame-Options: DENY`, COOP, Permissions-Policy, nosniff, strict referrer policy, correct `application/manifest+json` MIME type, immutable one-year `/assets/*` caching, and explicit no-cache service-worker/manifest policy. The source config is covered by a Vitest regression.
+## Release-blocking defect
 
-## Local verification (2026-08-28)
+### High — insufficient import validation can brick the local application
 
-- Clean install: `npm ci` — completed; `npm audit --audit-level=high` — **0 vulnerabilities**.
-- Unit/config: `npm run test:unit` — **2 files, 7 tests passed** (the seventh test verifies the static-host policy config).
-- Typecheck/build: `npm run build` — **passed**; emitted `dist/index.html`, legal pages, PWA assets, and `dist/staticwebapp.config.json`. Initial JS is **40,583 B** (12,920 B gzip); CSS is **21,766 B** (5,540 B gzip); mobile AVIF is **51,454 B**.
-- Browser integration: `npm run test:e2e` — **8/8 Chromium tests passed**, including core pantry-to-ready-meal workflow, shopping consolidation, custom meals, persistence, legal pages, clean console/runtime, initial light/dark axe, open-dialog axe, and offline reload.
-- Direct desktop/mobile browser smoke: at 1440×1000 the open custom-meal dialog returned **0 axe violations** and every initial control exposed its expected accessible name. At 390×844 `scrollWidth === innerWidth === 390`; no console/page errors occurred.
-- Keyboard: Tab reached “Skip to main content” with a 3px outline; keyboard entry and Enter added “Keyboard Beans”.
-- Offline: `npx playwright test tests/e2e/app.spec.ts -g 'reloads the complete app while offline'` — **1/1 passed** after a first service-worker-controlled visit.
+`validImportedState()` accepts a backup containing `seeded: true` and a meal with the required `id`, `name`, and ingredient fields but without render-required fields such as `note`, `tags`, `starter`, and `updatedAt`. The import flow saves this data to IndexedDB before rendering it. Rendering throws `Cannot read properties of undefined (reading 'replace')`; its catch displays “That file is not a valid Pantry Meal Gap backup.” but leaves the already-saved malformed record in place. On reload, the app cannot render and remains at “Charting your pantry…”.
 
-## Deployment and live evidence (2026-08-28)
+Reproduced on the live candidate in a fresh Chromium profile by importing this confirmed JSON after accepting the replacement confirmation:
 
-- Deployed `f5c3420a771b1eaf99ef8d8ef300d5fc6655efa3` with `/opt/fleet/lib/deploy-static.sh pantry-meal-gap /work/repo/dist` to <https://pantry-meal-gap.sociobot.in/>. Azure Static Web Apps accepted `public/staticwebapp.config.json` during deployment.
-- `/opt/fleet/lib/verify-url.sh https://pantry-meal-gap.sociobot.in/ …` returned HTTPS **200** in **988 ms**, with no console/page errors, title present, `lang=en`, one `<h1>`, a `<main>`, zero images missing `alt`, and zero unlabelled buttons.
-- A fresh live Chromium context (desktop then 390×844) opened Add your meal: all **12** initial input/select controls had matching labels and `axe.run('#meal-dialog')` returned **0 violations**. It also confirmed 390px width without overflow, a service-worker controller, Tab focus on “Skip to main content” with a 3px outline, offline reload showing “Offline field mode.”, no console/page errors, and no requested origin other than `https://pantry-meal-gap.sociobot.in`.
-- Live policy response checks: `/assets/main-CE-wIgn4.js` has `Cache-Control: public, max-age=31536000, immutable`; `/sw.js` has `no-cache, no-store, must-revalidate`; `/manifest.webmanifest` has `Content-Type: application/manifest+json` and `Cache-Control: no-cache`. Root and assets return the enforcing CSP, `X-Frame-Options: DENY`, `Cross-Origin-Opener-Policy: same-origin`, Permissions-Policy, `X-Content-Type-Options: nosniff`, and strict referrer policy.
-- Artifact identity check: SHA-256 matched local `dist/` and the live response for `index.html`, `main-CE-wIgn4.js`, `main-CnYzW7j2.css`, `sw.js`, and `manifest.webmanifest`.
-- Update path: a disposable localhost production-artifact server first served the deployed worker and then only changed its served worker bytes. `registration.update()` displayed “The offline map was updated. Reload”, confirming the in-app update notification still functions with the new worker cache policy.
-
-No application behavior beyond the documented accessibility/semantic/touch-policy repairs has changed.
-
-## How to run
-
-```sh
-npm ci
-npm test
-npm run build
+```json
+{"product":"pantry-meal-gap","data":{"seeded":true,"pantry":[],"meals":[{"id":"bad-meal","name":"Malformed backup","ingredients":[{"id":"bad-ingredient","name":"rice","quantity":1,"unit":"cup","substitutions":[]}]}],"shopping":[],"history":[]}}
 ```
 
-No accounts, analytics, third-party scripts, remote fonts, or runtime APIs are introduced. Pantry, meal, shopping, and history data remain in IndexedDB; theme preference remains local storage; export/import remain available.
+Expected: reject the file before any write and retain the current valid map. Actual: next reload is unusable until site data is manually cleared outside the product. Validate every persisted/rendered field and the top-level schema before `saveState`; do not replace current state unless validation and rendering-safe normalization both succeed.
 
-## Known product limits
+## Other defect
 
-- Matching stays exact after case/whitespace normalization; it does not infer plurals or food taxonomy.
-- Unit conversion is within mass and volume families only; it does not guess density.
-- Meal templates are ingredient checklists, not cooking instructions. Food safety, quantities, substitutions, and allergy suitability stay with the cook.
-- Data is device/browser local. Clearing browser storage removes it unless the user exported a backup.
+### Medium — mobile Lighthouse performance gate missed
+
+Fresh live Lighthouse mobile runs produced Performance **89** (first run ended with a post-report tab crash) and **85** (clean exit); the stated PWA performance target is at least 90. The clean run measured FCP 0.9 s, LCP 1.4 s, TBT 580 ms, CLS 0, and interactive 1.7 s. Accessibility, Best Practices, and SEO were 100 in both reports. Investigate the elevated blocking time and rerun the gate after remediation.
+
+## Evidence that passed
+
+- Clean candidate checkout at the stated SHA; `npm ci` and `npm audit --audit-level=high` completed with 0 vulnerabilities.
+- `npm run test:unit`: 7/7 passed. `npm run build` (`tsc --noEmit && vite build`) passed. All 8 repository Chromium integration tests passed when run in groups under the execution time limit: normal matching, shopping consolidation, custom meal/substitutions, dynamic-dialog labels plus axe, light/dark axe, clean console, legal pages, and offline reload. There is no lint script; the build performs the repository typecheck.
+- Production output: JS 40,583 B raw / 12,776 B gzip; CSS 21,766 B raw / 5,544 B gzip; mobile AVIF 51,454 B. These are within the stated static bundle budgets.
+- Live SHA-256 values exactly matched local `dist/` for `index.html`, JS, CSS, `sw.js`, manifest, offline page, and both legal pages. The deployment therefore serves this candidate artifact.
+- Independent normal-flow exercise added pantry quantities (including normalized duplicate aggregation to 1.5 cups), made Tomato lentil pot ready through its water substitution, created a custom meal, handled search no-results/clear recovery, and retained normal data through reload. Console and page-error listeners were empty for this normal flow.
+- Live axe-core 4.10.2 scans (with CSP bypass used only to inject the test harness) returned zero violations on light, dark, and open custom-meal-dialog states; therefore zero serious/critical findings. The custom input labels repaired by the candidate are exposed by accessible name.
+- At 390×844, `scrollWidth === innerWidth === 390`; keyboard Tab exposed “Skip to main content” with a 3px visible focus outline, keyboard entry/Enter added a pantry row, and reduced-motion dialog/card durations were `1e-06s`. Desktop and mobile visual review found the product-specific kitchen-cartography layout clear and usable.
+- PWA: after an online controlled visit, offline reload displayed “Offline field mode.” and the app rendered normally. A disposable production-artifact server served a changed worker response to `registration.update()`; the app showed “The offline map was updated. Reload” with no console errors.
+- Privacy/network: fresh live normal-use capture made no outbound request beyond the product origin. The only external link is the user-activated source repository; no analytics, third-party scripts, CDN fonts, or runtime APIs were found. Pantry/meal/list/history data use IndexedDB and theme uses localStorage. Privacy and terms pages are present.
+- `/opt/fleet/lib/verify-url.sh` returned HTTPS 200 in 1,186 ms, title present, `lang=en`, one h1, main landmark, zero images lacking alt, zero unlabelled buttons, and no browser errors. Live responses provide enforcing same-origin CSP, `X-Frame-Options: DENY`, COOP, Permissions-Policy, nosniff, strict referrer policy, immutable hashed assets, no-store service worker, and `application/manifest+json` manifest MIME/caching.
+
+Full commands, response evidence, and reproduction details are in `.factory/verification-2.md`.
