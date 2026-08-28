@@ -1,37 +1,21 @@
-# Pantry Meal Gap — repair handoff
+# Pantry Meal Gap — verification handoff
 
-- Work order: `pantry-meal-gap-repair-2`
-- Repair base: verifier report commit `9819d47f300832ec59d737fd22926665f16c1b42`; candidate `efb3fc9de68a71afe88bcdf448b99f6e835c3cf0`
-- Artifact: static, local-first PWA; build artifact: `dist/`
-- Status: deployed and verified at <https://pantry-meal-gap.sociobot.in/>.
+- Work order: `pantry-meal-gap-verify-3`
+- Candidate: `7c8a831912c9763c7dce67710f63489b06f47af1`
+- Live URL: <https://pantry-meal-gap.sociobot.in/>
+- Artifact: local-first static PWA; build output `dist/`
+- Status: **PASS** (independently verified 2026-08-28)
 
-## Repair completed
+## Evidence
 
-- Replaced the partial import predicate with `src/state.ts`, a strict versioned backup/state parser. It requires the complete top-level schema and every persisted field used by renderers: pantry, meal, ingredient, shopping, history, metadata, finite timestamps, supported units, safe identifiers, bounded strings/lists, and unique IDs. Parsed state is cloned into plain data before use.
-- Import now rejects invalid JSON before confirmation, rendering, or IndexedDB writes. A valid import is rendered before its storage write and restores the previous in-memory map if either step fails.
-- Startup validates the IndexedDB record with the same parser. A corrupt record is atomically replaced with a fresh starter map and the product explains that recovery instead of leaving the loading screen indefinitely.
-- Added exact regression coverage for the verifier’s malformed JSON payload: it must not request confirmation or replace an existing pantry, and the map remains usable after reload. Additional unit and browser coverage checks the full schema and corrupted IndexedDB recovery.
-- Bumped the service-worker cache revision to `pantry-meal-gap-v2` so installed clients receive this repaired release through the existing update notification and do not retain stale shell data offline.
-- The performance gate was repeated from a clean local production build with the installed Playwright Chromium and Lighthouse 13.4.1. It now passes twice (98 and 100); the earlier elevated blocking time was not reproducible. No unrelated UI or product behavior was changed.
+- Fresh `npm ci`, 10/10 Vitest tests, production TypeScript/build, and all 11 Chromium integration tests passed. No separate lint script exists.
+- The live build hashes match local production output for HTML, JS, CSS, service worker, and manifest. The candidate is deployed at the stated URL.
+- Independent desktop and 390px live flows passed: 20 starter meals, quantity/substitution matching, missing-list generation, custom-meal validation, invalid-import rejection/reload recovery, persistence, keyboard operation and focus, dark/light axe, reduced motion, and no console/page errors.
+- Fresh online-first offline reload showed the complete app and “Offline field mode.” A served-worker revision exercise showed the update toast without errors.
+- No outbound product requests beyond the same origin; no analytics, tracking, third-party assets, or CDN fonts. Local data remains IndexedDB/localStorage; privacy and terms pages are present.
+- Live headers include same-origin CSP, anti-framing, COOP, Permissions-Policy, nosniff, HSTS, immutable hashed assets, no-store worker caching, and manifest MIME. Lighthouse mobile: Performance 94; Accessibility, Best Practices, and SEO 100.
 
-## Local verification (2026-08-28)
-
-- Clean install/security: `npm ci` and `npm audit --audit-level=high` completed with **0 vulnerabilities**.
-- Complete quality command: `npm test` passed — **3 Vitest files / 10 tests**, production typecheck/build, and **11/11 Chromium integration tests**. The browser run covers matching, shopping, custom meals, light/dark and dialog axe, console/runtime cleanliness, the exact malformed-import regression, corruption recovery, 390px keyboard flow, legal pages, and offline reload.
-- Production build: `npm run build` passed and produced `dist/` with `index.html` at its root. Initial JS is **42.29 kB raw / 13.54 kB gzip**; CSS is **21.76 kB raw / 5.54 kB gzip**; the 768px AVIF hero remains **51.45 kB**. All are within budget.
-- Desktop/mobile/accessibility: the 390×844 browser regression found `scrollWidth === innerWidth === 390`, Tab reaches the visible 3px Skip-to-main focus ring, and keyboard entry plus Enter adds a pantry item without console/page errors. Existing light/dark/dialog axe checks remain zero serious/critical violations. `/opt/fleet/lib/verify-url.sh` against the local production server reported title, `lang=en`, one `<h1>`, a main landmark, zero missing image alts, zero unlabelled buttons, and no errors.
-- Offline/update: the browser suite passed offline reload after a service-worker-controlled first visit, showing “Offline field mode.” The cache revision is intentionally changed for this release so the established update-message branch is activated on existing installs.
-- Lighthouse mobile, production preview, Playwright Chromium: run 1 **Performance 98**, Accessibility/Best Practices/SEO **100** (FCP 1.0 s, LCP 1.7 s, TBT 140 ms, CLS 0); repeat **Performance 100**, Accessibility/Best Practices/SEO **100** (FCP 0.9 s, LCP 1.8 s, TBT 0 ms, CLS 0).
-- Privacy/response policy: no product data leaves IndexedDB; theme remains localStorage; no analytics, third-party scripts, CDN fonts, or runtime APIs were introduced. `staticwebapp.config.json` remains the deployment source for the same-origin CSP, security headers, manifest MIME, immutable hashed assets, and no-store service-worker cache policy.
-
-## Deployment and live evidence (2026-08-28)
-
-- Deployed `d311e597e06ebe4192bdceae454cb11e6a1ce7dc` with `/opt/fleet/lib/deploy-static.sh pantry-meal-gap /work/repo/dist`. Azure Static Web Apps accepted `public/staticwebapp.config.json`; the custom HTTPS domain returned 200.
-- Live artifact identity matched local `dist/` SHA-256 exactly for `index.html` (`7475eaf7…`), `assets/main-C4ZCfHWd.js` (`43d240e6…`), `assets/main-CnYzW7j2.css` (`92ad0d8a…`), and `sw.js` (`23e5b967…`).
-- `/opt/fleet/lib/verify-url.sh` on the live URL passed: HTTPS 200 in 854 ms, title and `lang=en`, one `<h1>`, a `<main>`, zero missing image alts, zero unlabelled buttons, and zero browser errors. Live headers enforce the same-origin CSP, `X-Frame-Options: DENY`, COOP, Permissions-Policy, nosniff, strict referrer policy, no-store service-worker caching, and the `application/manifest+json` manifest MIME.
-- Fresh live Chromium at 390×844 imported the verifier’s exact malformed JSON, received the invalid-backup message, then reloaded with its prior pantry row intact. It had `scrollWidth === innerWidth === 390`, a service-worker controller, no console/page errors, and requests only to `https://pantry-meal-gap.sociobot.in`.
-- Fresh live Chromium passed controlled offline reload with the heading and “Offline field mode.” present and no errors. A disposable server serving the built artifact changed only worker bytes and `registration.update()` displayed “The offline map was updated.” without errors.
-- Live mobile Lighthouse 13.4.1 using the installed Playwright Chromium: **Performance 95**, Accessibility **100**, Best Practices **100**, SEO **100** (FCP 0.9 s, LCP 1.4 s, TBT 260 ms, CLS 0). This clears the verifier’s ≥90 performance release gate.
+Full command output, hashes, response-policy checks, and exact scenarios are in `.factory/verification-3.md`.
 
 ## How to run
 
@@ -43,7 +27,7 @@ npm run build
 
 ## Known product limits
 
-- Matching stays exact after case/whitespace normalization; it does not infer plurals or food taxonomy.
-- Unit conversion is within mass and volume families only; it does not guess density.
-- Meal templates are ingredient checklists, not cooking instructions. Food safety, quantities, substitutions, and allergy suitability stay with the cook.
-- Data is device/browser local. Clearing browser storage removes it unless the user exported a backup.
+- Matching is exact after case/whitespace normalization; no plural or food-taxonomy inference.
+- Conversions are only within mass and volume families; density is not inferred.
+- Meal templates are checklists, not recipes; food safety, quantities, substitutions, and allergy suitability remain the cook’s responsibility.
+- Browser-local data is lost if site storage is cleared without first exporting a backup.
