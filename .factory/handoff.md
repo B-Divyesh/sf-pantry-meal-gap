@@ -1,44 +1,40 @@
-# Pantry Meal Gap — independent verification handoff
+# Pantry Meal Gap — repair handoff
 
-- Work order: `pantry-meal-gap-verify-2`
-- Candidate tested: `efb3fc9de68a71afe88bcdf448b99f6e835c3cf0`
-- Live URL: <https://pantry-meal-gap.sociobot.in/>
-- Verification date: 2026-08-28
-- Verdict: **FAIL**
+- Work order: `pantry-meal-gap-repair-2`
+- Repair base: verifier report commit `9819d47f300832ec59d737fd22926665f16c1b42`; candidate `efb3fc9de68a71afe88bcdf448b99f6e835c3cf0`
+- Artifact: static, local-first PWA; build artifact: `dist/`
+- Status: repair built and fully tested locally; deployment evidence follows the production upload.
 
-The live application is byte-identical to the candidate production build, and its normal pantry-to-meal workflow, PWA offline reload/update, privacy posture, headers, responsive layout, and repaired dialog accessibility checks pass. It is not releasable because malformed-but-accepted backup JSON can persist invalid state and make the next reload show only the loading screen with an uncaught error. The current app supplies no in-product recovery path.
+## Repair completed
 
-## Release-blocking defect
+- Replaced the partial import predicate with `src/state.ts`, a strict versioned backup/state parser. It requires the complete top-level schema and every persisted field used by renderers: pantry, meal, ingredient, shopping, history, metadata, finite timestamps, supported units, safe identifiers, bounded strings/lists, and unique IDs. Parsed state is cloned into plain data before use.
+- Import now rejects invalid JSON before confirmation, rendering, or IndexedDB writes. A valid import is rendered before its storage write and restores the previous in-memory map if either step fails.
+- Startup validates the IndexedDB record with the same parser. A corrupt record is atomically replaced with a fresh starter map and the product explains that recovery instead of leaving the loading screen indefinitely.
+- Added exact regression coverage for the verifier’s malformed JSON payload: it must not request confirmation or replace an existing pantry, and the map remains usable after reload. Additional unit and browser coverage checks the full schema and corrupted IndexedDB recovery.
+- Bumped the service-worker cache revision to `pantry-meal-gap-v2` so installed clients receive this repaired release through the existing update notification and do not retain stale shell data offline.
+- The performance gate was repeated from a clean local production build with the installed Playwright Chromium and Lighthouse 13.4.1. It now passes twice (98 and 100); the earlier elevated blocking time was not reproducible. No unrelated UI or product behavior was changed.
 
-### High — insufficient import validation can brick the local application
+## Local verification (2026-08-28)
 
-`validImportedState()` accepts a backup containing `seeded: true` and a meal with the required `id`, `name`, and ingredient fields but without render-required fields such as `note`, `tags`, `starter`, and `updatedAt`. The import flow saves this data to IndexedDB before rendering it. Rendering throws `Cannot read properties of undefined (reading 'replace')`; its catch displays “That file is not a valid Pantry Meal Gap backup.” but leaves the already-saved malformed record in place. On reload, the app cannot render and remains at “Charting your pantry…”.
+- Clean install/security: `npm ci` and `npm audit --audit-level=high` completed with **0 vulnerabilities**.
+- Complete quality command: `npm test` passed — **3 Vitest files / 10 tests**, production typecheck/build, and **11/11 Chromium integration tests**. The browser run covers matching, shopping, custom meals, light/dark and dialog axe, console/runtime cleanliness, the exact malformed-import regression, corruption recovery, 390px keyboard flow, legal pages, and offline reload.
+- Production build: `npm run build` passed and produced `dist/` with `index.html` at its root. Initial JS is **42.29 kB raw / 13.54 kB gzip**; CSS is **21.76 kB raw / 5.54 kB gzip**; the 768px AVIF hero remains **51.45 kB**. All are within budget.
+- Desktop/mobile/accessibility: the 390×844 browser regression found `scrollWidth === innerWidth === 390`, Tab reaches the visible 3px Skip-to-main focus ring, and keyboard entry plus Enter adds a pantry item without console/page errors. Existing light/dark/dialog axe checks remain zero serious/critical violations. `/opt/fleet/lib/verify-url.sh` against the local production server reported title, `lang=en`, one `<h1>`, a main landmark, zero missing image alts, zero unlabelled buttons, and no errors.
+- Offline/update: the browser suite passed offline reload after a service-worker-controlled first visit, showing “Offline field mode.” The cache revision is intentionally changed for this release so the established update-message branch is activated on existing installs.
+- Lighthouse mobile, production preview, Playwright Chromium: run 1 **Performance 98**, Accessibility/Best Practices/SEO **100** (FCP 1.0 s, LCP 1.7 s, TBT 140 ms, CLS 0); repeat **Performance 100**, Accessibility/Best Practices/SEO **100** (FCP 0.9 s, LCP 1.8 s, TBT 0 ms, CLS 0).
+- Privacy/response policy: no product data leaves IndexedDB; theme remains localStorage; no analytics, third-party scripts, CDN fonts, or runtime APIs were introduced. `staticwebapp.config.json` remains the deployment source for the same-origin CSP, security headers, manifest MIME, immutable hashed assets, and no-store service-worker cache policy.
 
-Reproduced on the live candidate in a fresh Chromium profile by importing this confirmed JSON after accepting the replacement confirmation:
+## How to run
 
-```json
-{"product":"pantry-meal-gap","data":{"seeded":true,"pantry":[],"meals":[{"id":"bad-meal","name":"Malformed backup","ingredients":[{"id":"bad-ingredient","name":"rice","quantity":1,"unit":"cup","substitutions":[]}]}],"shopping":[],"history":[]}}
+```sh
+npm ci
+npm test
+npm run build
 ```
 
-Expected: reject the file before any write and retain the current valid map. Actual: next reload is unusable until site data is manually cleared outside the product. Validate every persisted/rendered field and the top-level schema before `saveState`; do not replace current state unless validation and rendering-safe normalization both succeed.
+## Known product limits
 
-## Other defect
-
-### Medium — mobile Lighthouse performance gate missed
-
-Fresh live Lighthouse mobile runs produced Performance **89** (first run ended with a post-report tab crash) and **85** (clean exit); the stated PWA performance target is at least 90. The clean run measured FCP 0.9 s, LCP 1.4 s, TBT 580 ms, CLS 0, and interactive 1.7 s. Accessibility, Best Practices, and SEO were 100 in both reports. Investigate the elevated blocking time and rerun the gate after remediation.
-
-## Evidence that passed
-
-- Clean candidate checkout at the stated SHA; `npm ci` and `npm audit --audit-level=high` completed with 0 vulnerabilities.
-- `npm run test:unit`: 7/7 passed. `npm run build` (`tsc --noEmit && vite build`) passed. All 8 repository Chromium integration tests passed when run in groups under the execution time limit: normal matching, shopping consolidation, custom meal/substitutions, dynamic-dialog labels plus axe, light/dark axe, clean console, legal pages, and offline reload. There is no lint script; the build performs the repository typecheck.
-- Production output: JS 40,583 B raw / 12,776 B gzip; CSS 21,766 B raw / 5,544 B gzip; mobile AVIF 51,454 B. These are within the stated static bundle budgets.
-- Live SHA-256 values exactly matched local `dist/` for `index.html`, JS, CSS, `sw.js`, manifest, offline page, and both legal pages. The deployment therefore serves this candidate artifact.
-- Independent normal-flow exercise added pantry quantities (including normalized duplicate aggregation to 1.5 cups), made Tomato lentil pot ready through its water substitution, created a custom meal, handled search no-results/clear recovery, and retained normal data through reload. Console and page-error listeners were empty for this normal flow.
-- Live axe-core 4.10.2 scans (with CSP bypass used only to inject the test harness) returned zero violations on light, dark, and open custom-meal-dialog states; therefore zero serious/critical findings. The custom input labels repaired by the candidate are exposed by accessible name.
-- At 390×844, `scrollWidth === innerWidth === 390`; keyboard Tab exposed “Skip to main content” with a 3px visible focus outline, keyboard entry/Enter added a pantry row, and reduced-motion dialog/card durations were `1e-06s`. Desktop and mobile visual review found the product-specific kitchen-cartography layout clear and usable.
-- PWA: after an online controlled visit, offline reload displayed “Offline field mode.” and the app rendered normally. A disposable production-artifact server served a changed worker response to `registration.update()`; the app showed “The offline map was updated. Reload” with no console errors.
-- Privacy/network: fresh live normal-use capture made no outbound request beyond the product origin. The only external link is the user-activated source repository; no analytics, third-party scripts, CDN fonts, or runtime APIs were found. Pantry/meal/list/history data use IndexedDB and theme uses localStorage. Privacy and terms pages are present.
-- `/opt/fleet/lib/verify-url.sh` returned HTTPS 200 in 1,186 ms, title present, `lang=en`, one h1, main landmark, zero images lacking alt, zero unlabelled buttons, and no browser errors. Live responses provide enforcing same-origin CSP, `X-Frame-Options: DENY`, COOP, Permissions-Policy, nosniff, strict referrer policy, immutable hashed assets, no-store service worker, and `application/manifest+json` manifest MIME/caching.
-
-Full commands, response evidence, and reproduction details are in `.factory/verification-2.md`.
+- Matching stays exact after case/whitespace normalization; it does not infer plurals or food taxonomy.
+- Unit conversion is within mass and volume families only; it does not guess density.
+- Meal templates are ingredient checklists, not cooking instructions. Food safety, quantities, substitutions, and allergy suitability stay with the cook.
+- Data is device/browser local. Clearing browser storage removes it unless the user exported a backup.

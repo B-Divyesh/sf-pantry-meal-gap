@@ -2,6 +2,7 @@ import './styles.css';
 import { freshState, STARTER_MEALS } from './data';
 import { loadState, saveState } from './db';
 import { formatQuantity, matchMeal, normalizeName } from './matcher';
+import { normalizeAppState, parseBackup } from './state';
 import { UNITS, type AppState, type Meal, type MealIngredient, type PantryItem, type ShoppingItem, type Unit } from './types';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -579,34 +580,27 @@ function exportBackup(): void {
   announce('Local backup exported.');
 }
 
-function validImportedState(value: unknown): value is AppState {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as Partial<AppState>;
-  const validUnit = (unit: unknown): unit is Unit => typeof unit === 'string' && UNITS.includes(unit as Unit);
-  return Array.isArray(candidate.pantry) && Array.isArray(candidate.meals) && Array.isArray(candidate.shopping) && Array.isArray(candidate.history)
-    && candidate.meals.every((meal) => meal && typeof meal.id === 'string' && typeof meal.name === 'string' && Array.isArray(meal.ingredients)
-      && meal.ingredients.every((ingredient) => ingredient && typeof ingredient.id === 'string' && typeof ingredient.name === 'string'
-        && typeof ingredient.quantity === 'number' && ingredient.quantity > 0 && validUnit(ingredient.unit)
-        && Array.isArray(ingredient.substitutions) && ingredient.substitutions.every((swap) => typeof swap === 'string')))
-    && candidate.pantry.every((item) => item && typeof item.id === 'string' && typeof item.name === 'string'
-      && typeof item.quantity === 'number' && item.quantity > 0 && validUnit(item.unit))
-    && candidate.shopping.every((item) => item && typeof item.id === 'string' && typeof item.name === 'string'
-      && typeof item.quantity === 'number' && item.quantity > 0 && validUnit(item.unit) && typeof item.checked === 'boolean')
-    && candidate.history.every((entry) => entry && typeof entry.id === 'string' && typeof entry.mealName === 'string'
-      && typeof entry.gapCount === 'number' && typeof entry.createdAt === 'number');
-}
-
 async function importBackup(event: Event): Promise<void> {
   const input = event.currentTarget as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
   try {
-    const parsed = JSON.parse(await file.text()) as { product?: string; data?: unknown };
-    if (parsed.product !== 'pantry-meal-gap' || !validImportedState(parsed.data)) throw new Error('invalid');
+    const imported = parseBackup(JSON.parse(await file.text()));
+    if (!imported) throw new Error('invalid');
     if (!window.confirm('Replace this device’s pantry, meals, shopping list, and route history with the imported backup?')) return;
-    state = { ...parsed.data, updatedAt: Date.now() };
-    await saveState(state);
-    renderApp();
+    const nextState: AppState = { ...imported, updatedAt: Date.now() };
+    // Render before committing so a future display change cannot persist an
+    // unusable backup. State is only swapped after both steps succeed.
+    const previousState = state;
+    state = nextState;
+    try {
+      renderApp();
+      await saveState(nextState);
+    } catch (error) {
+      state = previousState;
+      renderApp();
+      throw error;
+    }
     announce('Backup imported.');
   } catch {
     announce('That file is not a valid Pantry Meal Gap backup.', true);
@@ -657,8 +651,16 @@ async function start(): Promise<void> {
     return;
   }
   try {
-    state = (await loadState()) ?? freshState();
-    if (!state.seeded) state = freshState();
+    const stored = await loadState();
+    const recovered = stored ? normalizeAppState(stored) : null;
+    if (stored && !recovered) {
+      state = freshState();
+      await saveState(state);
+      window.setTimeout(() => announce('Damaged local data was reset to a safe starter map.', true), 100);
+    } else {
+      state = recovered ?? freshState();
+      if (!state.seeded) state = freshState();
+    }
   } catch {
     state = freshState();
     window.setTimeout(() => announce('Browser storage is unavailable. Export a backup before closing.', true), 100);

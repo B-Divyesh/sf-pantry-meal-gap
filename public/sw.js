@@ -1,4 +1,6 @@
-const CACHE_VERSION = 'pantry-meal-gap-v1';
+// Bump with each shipped app revision so installed clients receive the update
+// message and stale shell responses cannot mask a repaired release offline.
+const CACHE_VERSION = 'pantry-meal-gap-v2';
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 const INSTALLING_AS_UPDATE = Boolean(self.registration.active);
 const APP_SHELL = [

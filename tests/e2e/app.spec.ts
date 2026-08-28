@@ -109,6 +109,86 @@ test('loads without console or runtime errors', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('rejects the verifier malformed backup without replacing a usable map after reload', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.locator('#pantry-name').fill('rice');
+  await page.getByRole('button', { name: 'Add to map' }).click();
+  await expect(page.locator('.pantry-row')).toHaveCount(1);
+
+  // Exact payload from the independent verifier: it lacks version and fields
+  // that rendering needs. It must fail before confirmation or IndexedDB write.
+  const malformed = '{"product":"pantry-meal-gap","data":{"seeded":true,"pantry":[],"meals":[{"id":"bad-meal","name":"Malformed backup","ingredients":[{"id":"bad-ingredient","name":"rice","quantity":1,"unit":"cup","substitutions":[]}]}],"shopping":[],"history":[]}}';
+  let confirmationRequested = false;
+  page.on('dialog', (dialog) => {
+    confirmationRequested = true;
+    void dialog.dismiss();
+  });
+  await page.locator('#import-data').setInputFiles({ name: 'verifier-malformed.json', mimeType: 'application/json', buffer: Buffer.from(malformed) });
+  await expect(page.getByText('That file is not a valid Pantry Meal Gap backup.')).toBeVisible();
+  expect(confirmationRequested).toBe(false);
+
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Find the shortest route to dinner.');
+  await expect(page.locator('.pantry-row')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test('recovers a corrupted IndexedDB record to a usable starter map', async ({ page }) => {
+  await page.evaluate(async () => {
+    const malformed = {
+      seeded: true,
+      pantry: [],
+      meals: [{ id: 'bad-meal', name: 'Malformed backup', ingredients: [{ id: 'bad-ingredient', name: 'rice', quantity: 1, unit: 'cup', substitutions: [] }] }],
+      shopping: [],
+      history: []
+    };
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('pantry-meal-gap', 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const database = request.result;
+        const transaction = database.transaction('state', 'readwrite');
+        transaction.objectStore('state').put(malformed, 'current');
+        transaction.oncomplete = () => { database.close(); resolve(); };
+        transaction.onerror = () => reject(transaction.error);
+      };
+    });
+  });
+
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Find the shortest route to dinner.');
+  await expect(page.getByText('Damaged local data was reset to a safe starter map.')).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Find the shortest route to dinner.');
+  await expect(page.locator('.meal-card')).toHaveCount(20);
+});
+
+test('keeps the keyboard pantry flow and 390px field sheet usable', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => ({ documentWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth }))).toEqual({ documentWidth: 390, viewportWidth: 390 });
+
+  await page.keyboard.press('Tab');
+  const skipLink = page.getByRole('link', { name: 'Skip to main content' });
+  await expect(skipLink).toBeFocused();
+  await expect(skipLink).toHaveCSS('outline-width', '3px');
+
+  await page.locator('#pantry-name').focus();
+  await page.keyboard.type('keyboard beans');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('1');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('Keyboard Beans', { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('legal pages have one h1 and the expected local-data policy', async ({ page }) => {
   await page.goto('/privacy/');
   await expect(page.locator('h1')).toHaveCount(1);
