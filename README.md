@@ -72,7 +72,7 @@ The tool intentionally does not infer food density, singular/plural relationship
 
 `public/sw.js` precaches the app shell, uses network-first navigation, and cache-first local assets. A successful first visit is required before offline use. User data is not put in the service-worker cache; it remains in IndexedDB.
 
-Deploy the contents of `dist/` to any static host with HTTPS. No server-side routing or environment variables are required. `/privacy/` and `/terms/` are emitted as real static entry points.
+Deploy the contents of `dist/` to any static host with HTTPS. No server-side routing or environment variables are required. `/privacy/` and `/terms/` are emitted as real static entry points. Azure Static Web Apps reads the emitted `staticwebapp.config.json` to enforce the app's CSP, frame/permissions policies, manifest MIME type, and immutable caching for `/assets/*`; equivalent headers should be configured when using another host.
 
 ## Visual assets
 

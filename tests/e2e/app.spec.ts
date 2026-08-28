@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import type { AxeResults } from 'axe-core';
 
+type Axe = { run: (context?: string) => Promise<AxeResults> };
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(async () => {
@@ -67,13 +69,34 @@ test('adds a custom meal with substitutions', async ({ page }) => {
   await expect(page.locator('.meal-card').filter({ hasText: 'Thursday toast' })).toBeVisible();
 });
 
+test('labels every dynamically created custom-meal control and has no serious or critical dialog axe findings', async ({ page }) => {
+  await page.getByRole('button', { name: 'Add your meal' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Add your meal' });
+
+  for (const rowNumber of [1, 2, 3]) {
+    await expect(dialog.getByLabel(`Ingredient ${rowNumber}`, { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel(`Amount ${rowNumber}`, { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel(`Unit ${rowNumber}`, { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel(`Accept instead ${rowNumber} optional`, { exact: true })).toBeVisible();
+  }
+
+  await dialog.getByRole('button', { name: 'Add ingredient row' }).click();
+  await expect(dialog.getByLabel('Ingredient 4', { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel('Unit 4', { exact: true })).toBeVisible();
+
+  await page.addScriptTag({ path: './node_modules/axe-core/axe.min.js' });
+  const results = await page.evaluate(async () => await (window as unknown as { axe: Axe }).axe.run('#meal-dialog'));
+  const important = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));
+  expect(important).toEqual([]);
+});
+
 test('has no serious or critical axe findings', async ({ page }) => {
   await page.addScriptTag({ path: './node_modules/axe-core/axe.min.js' });
-  const results = await page.evaluate(async () => await (window as unknown as { axe: { run: () => Promise<AxeResults> } }).axe.run());
+  const results = await page.evaluate(async () => await (window as unknown as { axe: Axe }).axe.run());
   const important = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));
   expect(important).toEqual([]);
   await page.getByRole('button', { name: 'Switch color theme' }).click();
-  const darkResults = await page.evaluate(async () => await (window as unknown as { axe: { run: () => Promise<AxeResults> } }).axe.run());
+  const darkResults = await page.evaluate(async () => await (window as unknown as { axe: Axe }).axe.run());
   const importantDark = darkResults.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));
   expect(importantDark).toEqual([]);
 });

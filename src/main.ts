@@ -207,7 +207,7 @@ function shoppingMarkup(): string {
           <ul class="shopping-list">${items}</ul>
           ${state.shopping.length ? `<div class="shopping-actions"><button class="button secondary" id="copy-list" type="button">Copy list</button><button class="button secondary" id="download-csv" type="button">Export CSV</button>${state.shopping.some((item) => item.checked) ? '<button class="text-button danger-text" id="clear-checked" type="button">Remove checked</button>' : ''}</div>` : ''}
         </div>
-        <aside class="data-panel" aria-labelledby="data-title"><p class="map-code">YOUR DATA</p><h3 id="data-title">Keep your own field notes</h3><p>Everything stays in this browser. Take a JSON backup or bring one back.</p><div><button class="button secondary" id="export-data" type="button">Export backup</button><label class="button secondary import-label">Import backup<input id="import-data" type="file" accept="application/json,.json" /></label></div><p class="data-note">Import replaces the current local map after validation.</p></aside>
+        <section class="data-panel" aria-labelledby="data-title"><p class="map-code">YOUR DATA</p><h3 id="data-title">Keep your own field notes</h3><p>Everything stays in this browser. Take a JSON backup or bring one back.</p><div><button class="button secondary" id="export-data" type="button">Export backup</button><label class="button secondary import-label">Import backup<input id="import-data" type="file" accept="application/json,.json" /></label></div><p class="data-note">Import replaces the current local map after validation.</p></section>
       </div>
       ${history}
     </section>`;
@@ -433,12 +433,15 @@ function recordRoute(meal: Meal, gapCount: number, close = true): void {
   }
 }
 
-function ingredientRowMarkup(ingredient?: MealIngredient): string {
+function ingredientRowMarkup(ingredient?: MealIngredient, rowNumber = 1): string {
+  // A row is created dynamically, so every control needs its own stable DOM id.
+  // The visible ordinal also distinguishes repeated field labels for assistive tech.
+  const rowId = `ingredient-row-${id()}`;
   return `<div class="ingredient-row">
-    <div class="field"><label>Ingredient <span class="sr-only">name</span></label><input name="ingredient-name" required maxlength="60" value="${e(ingredient?.name ?? '')}" /></div>
-    <div class="field"><label>Amount</label><input name="ingredient-quantity" type="number" min="0.01" step="0.01" required value="${ingredient?.quantity ?? 1}" /></div>
-    <div class="field"><label>Unit</label><select name="ingredient-unit">${unitOptions(ingredient?.unit)}</select></div>
-    <div class="field swaps-field"><label>Accept instead <span>optional</span></label><input name="ingredient-swaps" maxlength="160" value="${e(ingredient?.substitutions.join(', ') ?? '')}" placeholder="e.g. lime, vinegar" /></div>
+    <div class="field"><label for="${rowId}-name">Ingredient ${rowNumber}</label><input id="${rowId}-name" name="ingredient-name" required maxlength="60" value="${e(ingredient?.name ?? '')}" /></div>
+    <div class="field"><label for="${rowId}-quantity">Amount ${rowNumber}</label><input id="${rowId}-quantity" name="ingredient-quantity" type="number" min="0.01" step="0.01" required value="${ingredient?.quantity ?? 1}" /></div>
+    <div class="field"><label for="${rowId}-unit">Unit ${rowNumber}</label><select id="${rowId}-unit" name="ingredient-unit">${unitOptions(ingredient?.unit)}</select></div>
+    <div class="field swaps-field"><label for="${rowId}-swaps">Accept instead ${rowNumber} <span>optional</span></label><input id="${rowId}-swaps" name="ingredient-swaps" maxlength="160" value="${e(ingredient?.substitutions.join(', ') ?? '')}" placeholder="e.g. lime, vinegar" /></div>
     <button class="icon-button quiet remove-ingredient" type="button" aria-label="Remove ingredient row"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
   </div>`;
 }
@@ -453,14 +456,15 @@ function openMealEditor(meal?: Meal): void {
   (form.elements.namedItem('note') as HTMLTextAreaElement).value = meal?.note ?? '';
   const title = document.querySelector<HTMLHeadingElement>('#meal-dialog-title');
   if (title) title.textContent = meal ? 'Edit your meal' : 'Add your meal';
-  rows.innerHTML = (meal?.ingredients.length ? meal.ingredients : [undefined, undefined, undefined]).map((entry) => ingredientRowMarkup(entry)).join('');
+  rows.innerHTML = (meal?.ingredients.length ? meal.ingredients : [undefined, undefined, undefined]).map((entry, index) => ingredientRowMarkup(entry, index + 1)).join('');
   bindIngredientRemoveButtons();
   dialog.showModal();
   window.setTimeout(() => (form.elements.namedItem('name') as HTMLInputElement).focus(), 0);
 }
 
 function addIngredientRow(): void {
-  document.querySelector<HTMLDivElement>('#ingredient-rows')?.insertAdjacentHTML('beforeend', ingredientRowMarkup());
+  const rows = document.querySelector<HTMLDivElement>('#ingredient-rows');
+  rows?.insertAdjacentHTML('beforeend', ingredientRowMarkup(undefined, rows.children.length + 1));
   bindIngredientRemoveButtons();
 }
 

@@ -416,7 +416,7 @@ footer {
 footer > div { display: flex; align-items: center; gap: 12px; }
 footer p { margin: 0; }
 footer nav { display: flex; gap: 24px; }
-footer a { color: var(--muted); }
+footer a { min-height: 44px; display: inline-flex; align-items: center; color: var(--muted); }
 .art-note { justify-self: end; max-width: 260px; text-align: right; }
 
 dialog {

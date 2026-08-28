@@ -1,69 +1,45 @@
-# Pantry Meal Gap — independent verification handoff: **FAIL**
+# Pantry Meal Gap — repair handoff
 
-## Latest verification (2026-08-27)
+- Work order: `pantry-meal-gap-repair-1`
+- Repair base: verifier report commit `68ecfef71a44f1daffe0351fc1dcafcdb24871e2`, candidate `06a179381f0e6f42eb98fc45b7fcc5ef506633d3`
+- Artifact: static, local-first PWA; build artifact: `dist/`
+- Status: ready for static deployment and post-deploy identity/response-policy verification
 
-Candidate `06a179381f0e6f42eb98fc45b7fcc5ef506633d3` was independently tested locally and at `https://pantry-meal-gap.sociobot.in/`. **FAIL:** the Add/Edit custom-meal dialog has axe critical `label` (6 controls) and `select-name` (3 controls) violations. The form's visible labels are not programmatically associated with their fields. This is a release blocker under the required serious/critical axe gate.
+## Repair completed
 
-All 6 unit tests, all 7 repository Playwright tests, typecheck, production build, live core flow, persistence, offline reload, PWA update toast, keyboard smoke test, and live byte-identity comparison passed. The deployment also has non-blocking but material response-policy/cache issues: no enforcing CSP/frame policy, 30-second non-immutable caching for hashed assets, and an octet-stream manifest. See `.factory/verification.md` for exact commands, evidence, severity, and retest criteria.
+- Corrected the release-blocking custom-meal accessibility defect at its renderer: every ingredient, amount, unit, and acceptable-swap control now receives a unique generated `id` and a matching visible `<label for>`. The initial three rows and every subsequently added row are covered.
+- Added a Playwright regression that opens the dialog, asserts the accessible names for all initial controls and a newly added fourth row, then runs axe against the open dialog. The dialog now has **zero axe violations**, including zero serious/critical findings.
+- Fixed the verifier's initial-screen landmark finding by changing the nested data-panel `aside` to a labelled section; no complementary landmark remains nested inside the shopping section.
+- Made the three footer legal/source links 44px-high touch targets.
+- Added `public/staticwebapp.config.json`, which Vite copies into `dist/`, for Azure Static Web Apps. It adds enforcing CSP (`default-src 'self'`, `frame-ancestors 'none'`), `X-Frame-Options: DENY`, COOP, Permissions-Policy, nosniff, strict referrer policy, correct `application/manifest+json` MIME type, immutable one-year `/assets/*` caching, and explicit no-cache service-worker/manifest policy. The source config is covered by a Vitest regression.
 
-No product code was modified by this verifier. The verification documentation is the only change.
+## Local verification (2026-08-28)
 
----
+- Clean install: `npm ci` — completed; `npm audit --audit-level=high` — **0 vulnerabilities**.
+- Unit/config: `npm run test:unit` — **2 files, 7 tests passed** (the seventh test verifies the static-host policy config).
+- Typecheck/build: `npm run build` — **passed**; emitted `dist/index.html`, legal pages, PWA assets, and `dist/staticwebapp.config.json`. Initial JS is **40,583 B** (12,920 B gzip); CSS is **21,766 B** (5,540 B gzip); mobile AVIF is **51,454 B**.
+- Browser integration: `npm run test:e2e` — **8/8 Chromium tests passed**, including core pantry-to-ready-meal workflow, shopping consolidation, custom meals, persistence, legal pages, clean console/runtime, initial light/dark axe, open-dialog axe, and offline reload.
+- Direct desktop/mobile browser smoke: at 1440×1000 the open custom-meal dialog returned **0 axe violations** and every initial control exposed its expected accessible name. At 390×844 `scrollWidth === innerWidth === 390`; no console/page errors occurred.
+- Keyboard: Tab reached “Skip to main content” with a 3px outline; keyboard entry and Enter added “Keyboard Beans”.
+- Offline: `npx playwright test tests/e2e/app.spec.ts -g 'reloads the complete app while offline'` — **1/1 passed** after a first service-worker-controlled visit.
 
-- Work order: `pantry-meal-gap-build-1`
-- Completed: 2026-08-27
-- Deploy type: static PWA
-- Build command: `npm run build`
-- Artifact directory: `dist/`
+## Deployment and live evidence
 
-## What was built
+The static deploy, live identity comparison, response headers, service-worker update path, and final URL audit are performed after this repair commit is pushed. Append those exact results here after the deployment; no application behavior beyond the documented accessibility/semantic/touch-policy repairs has changed.
 
-- Complete local-first pantry → ranked meals → missing shopping list workflow.
-- Twenty editable, original starter meal checklists plus custom meal create/edit/delete.
-- Quantity-aware matching with partial coverage, compatible weight/volume conversions, manual substitutions, and no double allocation within one meal.
-- Consolidated shopping gaps, offline checkoff, clipboard copy, CSV export, and recent-route history.
-- IndexedDB persistence with validated JSON export/import and automatic saves.
-- Installable manifest with 192/512/maskable icons; versioned service-worker app shell; network-first navigation; cache-first same-origin assets; offline fallback; `skipWaiting`, `clients.claim`, and update/reload toast path.
-- `/privacy/` and `/terms/` static pages. No accounts, runtime analytics, CDN requests, remote fonts, or third-party scripts.
-- A distinct light/dark kitchen-cartography design system with keyboard focus, 44px targets, reduced-motion behavior, semantic landmarks, and responsive 390px layout.
-- Original generated pantry-map hero with prompt/model/date provenance in `.factory/design.md` and `assets/src/`; responsive AVIF/WebP/JPEG output. Mobile AVIF is 51 KB.
+## How to run
 
-## Verification
+```sh
+npm ci
+npm test
+npm run build
+```
 
-`npm test` passes from the repository root:
+No accounts, analytics, third-party scripts, remote fonts, or runtime APIs are introduced. Pantry, meal, shopping, and history data remain in IndexedDB; theme preference remains local storage; export/import remain available.
 
-- Vitest: 6/6 calculation and starter-data tests.
-- Playwright 1.58.2: 7/7 Chromium scenarios.
-- Covered: ready-meal matching, partial/local persistence, custom meal creation, generated gaps, shopping checkoff, one-h1 legal pages, clean console/runtime, axe serious/critical scan, and `context.setOffline(true)` reload of the complete app.
-- `npm audit --audit-level=high`: 0 vulnerabilities (full audit also reports 0).
-- `npm run build`: succeeds and emits `dist/index.html`, `/privacy/index.html`, and `/terms/index.html`.
-- Production output: 40.38 KB JS (12.88 KB gzip), 21.71 KB CSS (5.54 KB gzip), no runtime font payload.
-- 390×844 visual check: one `<h1>`, no horizontal overflow (`scrollWidth === innerWidth`), clean browser console.
+## Known product limits
 
-Lighthouse 13 mobile, production preview, headless Chromium:
-
-| Category / metric | Result |
-| --- | ---: |
-| Performance | 99 |
-| Accessibility | 100 |
-| Best practices | 100 |
-| SEO | 100 |
-| First Contentful Paint | 0.9 s |
-| Largest Contentful Paint | 1.8 s |
-| Cumulative Layout Shift | 0 |
-| Total Blocking Time | 110 ms |
-| Speed Index | 0.9 s |
-
-The explicit offline test passed after a first online visit: the app shell, saved IndexedDB state, matching, and shopping interactions remain available.
-
-## Known limits
-
-- Matching is deliberately explainable and exact after case/whitespace normalization; it does not infer plurals, taxonomy, or semantic ingredient similarity.
-- Conversions work inside mass and volume families. The app does not guess density or convert an ingredient between mass and volume.
-- Starter meals are ingredient checklists, not cooking instructions. Quantities, freshness, substitutions, allergens, cross-contamination, and food safety remain the user’s responsibility and are stated in-product.
-- Data is device/browser local. Clearing browser storage removes it unless the user has exported a backup; there is no sync or recovery service.
-- No pantry photography, recipe scraping, grocery delivery, nutrition calculation, or AI meal planning was added, per the brief.
-
-## Suggested next steps
-
-Run the four-week pilot from the opportunity brief. Route history already records meal choice and gap count locally; measure twice-weekly choice and 60% unedited-list acceptance through voluntary user research rather than adding tracking. If name mismatches are the main pilot complaint, add a small user-owned alias dictionary before considering a food database.
+- Matching stays exact after case/whitespace normalization; it does not infer plurals or food taxonomy.
+- Unit conversion is within mass and volume families only; it does not guess density.
+- Meal templates are ingredient checklists, not cooking instructions. Food safety, quantities, substitutions, and allergy suitability stay with the cook.
+- Data is device/browser local. Clearing browser storage removes it unless the user exported a backup.
