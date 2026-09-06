@@ -1,0 +1,93 @@
+[
+  {
+    "id": "demo-isolation",
+    "claim": "Sample data stays separate from your pantry.",
+    "where": "Demo banner, /demo",
+    "test": "npm run test:claims -- --grep @claim:demo-isolation",
+    "sandbox": "Fresh /demo workspace; reset sample; start for real; assert the real pantry and shopping list are empty."
+  },
+  {
+    "id": "free-sample",
+    "claim": "Try sample data without an account.",
+    "where": "Landing facts, /demo",
+    "test": "npm run test:claims -- --grep @claim:free-sample",
+    "sandbox": "Fresh /demo workspace renders meal matches and shopping items without account or payment controls."
+  },
+  {
+    "id": "offline-reload",
+    "claim": "Works offline after your first visit.",
+    "where": "Landing facts, Privacy, README",
+    "test": "npm run test:claims -- --grep @claim:offline-reload",
+    "sandbox": "New browser context visits /demo online, waits for service-worker control, goes offline, then reloads."
+  },
+  {
+    "id": "local-persistence",
+    "claim": "Changes save in this browser.",
+    "where": "Pantry section, README",
+    "test": "npm run test:claims -- --grep @claim:local-persistence",
+    "sandbox": "Fresh /demo workspace adds an ingredient, reloads, and observes the same ingredient."
+  },
+  {
+    "id": "private-data",
+    "claim": "Your entries do not leave this browser.",
+    "where": "Landing facts, Privacy, README",
+    "test": "npm run test:claims -- --grep @claim:private-data",
+    "sandbox": "Capture every request during a fresh /demo entry-and-save flow; assert every request is same-origin."
+  },
+  {
+    "id": "starter-meals",
+    "claim": "Includes 20 editable starter meals.",
+    "where": "README",
+    "test": "npm run test:claims -- --grep @claim:starter-meals",
+    "sandbox": "Fresh /demo workspace counts 20 meal cards, edits a starter meal, and observes the saved edit."
+  },
+  {
+    "id": "quantity-conversion",
+    "claim": "Matches partial quantities and compatible units.",
+    "where": "Meals section, README",
+    "test": "npm run test:claims -- --grep @claim:quantity-conversion",
+    "sandbox": "Fresh /demo workspace creates a 500 g meal, adds 0.25 kg then another 0.25 kg, and observes 50% then 100% coverage."
+  },
+  {
+    "id": "substitutions",
+    "claim": "Uses substitutions you choose.",
+    "where": "Meals section, README",
+    "test": "npm run test:claims -- --grep @claim:substitutions",
+    "sandbox": "Fresh /demo workspace opens the Tomato lentil pot and observes the selected water substitution."
+  },
+  {
+    "id": "csv-export",
+    "claim": "Exports the shopping list as CSV.",
+    "where": "Shopping list button, README",
+    "test": "npm run test:claims -- --grep @claim:csv-export",
+    "sandbox": "Fresh /demo workspace downloads the populated list and verifies its CSV header and three data rows."
+  },
+  {
+    "id": "copy-list",
+    "claim": "Copies the shopping list.",
+    "where": "Shopping list button",
+    "test": "npm run test:claims -- --grep @claim:copy-list",
+    "sandbox": "Fresh /demo workspace grants browser clipboard permission, copies the populated list, and reads the copied item text."
+  },
+  {
+    "id": "backup-export",
+    "claim": "Exports a JSON backup.",
+    "where": "Data panel button",
+    "test": "npm run test:claims -- --grep @claim:backup-export",
+    "sandbox": "Fresh /demo workspace downloads a backup and verifies its product version plus pantry and shopping records."
+  },
+  {
+    "id": "missing-list",
+    "claim": "Finds the smallest missing shopping list for a selected meal.",
+    "where": "Landing title, meal details, shopping list",
+    "test": "npm run test:claims -- --grep @claim:missing-list",
+    "sandbox": "Fresh /demo workspace opens Garlic pantry pasta, observes three missing items, adds them, and sees the same populated shopping list."
+  },
+  {
+    "id": "validated-import",
+    "claim": "Rejects invalid backup files before replacing your data.",
+    "where": "Data panel, Privacy, README",
+    "test": "npm run test:claims -- --grep @claim:validated-import",
+    "sandbox": "Fresh /demo workspace imports a malformed backup, receives an error without confirmation, and retains its sample pantry and list."
+  }
+]

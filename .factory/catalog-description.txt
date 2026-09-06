@@ -1,0 +1,1 @@
+Find the smallest missing shopping list from your pantry.

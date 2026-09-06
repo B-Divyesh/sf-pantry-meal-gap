@@ -3,7 +3,7 @@
   "name": "Pantry Meal Gap",
   "short_name": "Meal Gap",
   "description": "Find the closest meal to what is on hand and make the smallest shopping list.",
-  "start_url": "/?v=1&source=installed",
+  "start_url": "/?v=2&source=installed",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",

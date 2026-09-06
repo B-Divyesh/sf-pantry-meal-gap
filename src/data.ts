@@ -34,7 +34,7 @@ export const STARTER_MEALS: Meal[] = [
   meal('starter-bean-tacos', 'Black bean tacos', 'A simple filling to fold into tortillas.', ['quick', 'plant-based'], [
     ['black beans', 1, 'can', ['kidney beans']], ['tortillas', 6, 'item', ['flatbread']], ['onion', 1, 'item', ['shallot']], ['lime', 1, 'item', ['lemon']], ['cheese', 1, 'cup', ['avocado']]
   ]),
-  meal('starter-garlic-pasta', 'Garlic pantry pasta', 'A spare pasta route with plenty of room for greens.', ['quick', 'pantry'], [
+  meal('starter-garlic-pasta', 'Garlic pantry pasta', 'A simple pasta meal with plenty of room for greens.', ['quick', 'pantry'], [
     ['pasta', 250, 'g', ['noodles']], ['garlic', 4, 'clove', ['garlic powder']], ['olive oil', 3, 'tbsp', ['butter', 'vegetable oil']], ['chilli flakes', 1, 'tsp', ['black pepper']], ['parsley', 1, 'handful', ['spinach']]
   ]),
   meal('starter-potato-hash', 'Potato herb hash', 'Crisp potatoes with an egg or tofu on top.', ['skillet', 'flexible'], [
@@ -52,7 +52,7 @@ export const STARTER_MEALS: Meal[] = [
   meal('starter-dal', 'Everyday yellow dal', 'A gentle lentil pot to pair with rice or flatbread.', ['one pot', 'plant-based'], [
     ['yellow lentils', 1, 'cup', ['red lentils']], ['onion', 1, 'item', ['shallot']], ['tomatoes', 2, 'item', ['tomatoes']], ['turmeric', 1, 'tsp', ['curry powder']], ['cooked rice', 2, 'cup', ['flatbread']]
   ]),
-  meal('starter-quesadillas', 'Bean quesadillas', 'A crisp route for beans, cheese, and leftover vegetables.', ['quick', 'skillet'], [
+  meal('starter-quesadillas', 'Bean quesadillas', 'A crisp meal for beans, cheese, and leftover vegetables.', ['quick', 'skillet'], [
     ['tortillas', 4, 'item', ['flatbread']], ['beans', 1, 'can', ['black beans']], ['cheese', 2, 'cup', ['vegan cheese']], ['mixed vegetables', 1, 'cup', ['corn']], ['salsa', 4, 'tbsp', ['tomatoes']]
   ]),
   meal('starter-bean-toast', 'Herby beans on toast', 'Creamy beans, brightened up, piled on toast.', ['quick', 'plant-based'], [
@@ -79,7 +79,7 @@ export const STARTER_MEALS: Meal[] = [
   meal('starter-coconut-curry', 'Coconut vegetable curry', 'A mellow sauce for whichever vegetables need using.', ['one pot', 'plant-based'], [
     ['coconut milk', 1, 'can', ['tomatoes']], ['mixed vegetables', 3, 'cup', ['frozen vegetables']], ['chickpeas', 1, 'can', ['tofu']], ['curry powder', 2, 'tsp', ['curry paste']], ['cooked rice', 2, 'cup', ['flatbread']]
   ]),
-  meal('starter-panzanella', 'Tomato bread salad', 'A useful destination for ripe tomatoes and day-old bread.', ['no cook', 'vegetarian'], [
+  meal('starter-panzanella', 'Tomato bread salad', 'A useful meal for ripe tomatoes and day-old bread.', ['no cook', 'vegetarian'], [
     ['bread', 6, 'slice', ['flatbread']], ['tomatoes', 4, 'item', ['cherry tomatoes']], ['cucumber', 1, 'item', ['red pepper']], ['olive oil', 3, 'tbsp', ['vegetable oil']], ['vinegar', 1, 'tbsp', ['lemon']]
   ]),
   meal('starter-oats', 'Savory oat bowl', 'Oats cooked soft and topped like a grain bowl.', ['quick', 'bowl'], [
@@ -95,5 +95,26 @@ export function freshState(): AppState {
     history: [],
     seeded: true,
     updatedAt: Date.now()
+  };
+}
+
+/** A realistic, disposable workspace used only by /demo and ?demo=1. */
+export function freshDemoState(): AppState {
+  const now = Date.now();
+  const demoPantry: Array<[string, number, Unit]> = [
+    ['red lentils', 1, 'cup'], ['tomatoes', 1, 'can'], ['onion', 1, 'item'], ['garlic', 4, 'clove'], ['water', 2, 'cup'],
+    ['cooked rice', 3, 'cup'], ['egg', 2, 'item'], ['mixed vegetables', 2, 'cup'], ['soy sauce', 2, 'tbsp'], ['vegetable oil', 3, 'tbsp']
+  ];
+  return {
+    pantry: demoPantry.map(([name, quantity, unit], index) => ({ id: `demo-pantry-${index + 1}`, name, quantity, unit, updatedAt: now })),
+    meals: structuredClone(STARTER_MEALS),
+    shopping: [
+      { id: 'demo-shop-pasta', name: 'pasta', quantity: 250, unit: 'g', checked: false, sourceMealIds: ['starter-garlic-pasta'], updatedAt: now },
+      { id: 'demo-shop-chilli', name: 'chilli flakes', quantity: 1, unit: 'tsp', checked: false, sourceMealIds: ['starter-garlic-pasta'], updatedAt: now },
+      { id: 'demo-shop-parsley', name: 'parsley', quantity: 1, unit: 'handful', checked: false, sourceMealIds: ['starter-garlic-pasta'], updatedAt: now }
+    ],
+    history: [{ id: 'demo-history-pasta', mealName: 'Garlic pantry pasta', gapCount: 3, createdAt: now }],
+    seeded: true,
+    updatedAt: now
   };
 }

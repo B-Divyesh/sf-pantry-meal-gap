@@ -59,7 +59,9 @@ The hero is a painterly, top-down pantry map: bowls and staple ingredients arran
 
 > Use case: stylized-concept. Asset type: responsive PWA hero illustration. Primary request: an editorial top-down still life that turns a modest home pantry into a topographic field map. Scene: warm cream paper map on a worn kitchen table, small ceramic bowls of rice, beans, tomatoes, herbs and an onion arranged like islands; precise hand-drawn elevation contour rings flow around the ingredients; one clearly empty circular waypoint in restrained vermilion suggests the single missing ingredient. Style: tactile gouache and colored-pencil editorial illustration, sophisticated, calm, practical, lightly imperfect print texture. Composition: landscape 3:2, subject mass mainly left and center, some calm paper negative space, no interface mockup. Lighting: soft northern-window daylight. Palette: parchment, deep evergreen, muted sage, ochre, tomato vermilion, charcoal ink. Constraints: foods remain recognizable, contour lines coherent, no people, no text, no letters, no numbers, no logos, no packaging, no watermark. Avoid: photoreal stock photography, glossy 3D, generic gradient, fantasy landscape, excessive clutter, distorted food, brand marks.
 
-**Provenance:** generated specifically for Pantry Meal Gap with the factory image model (`factory-image`) on 2026-08-27 using `/opt/fleet/lib/gen-image.sh`. The optimized WebP and PNG-derived source are original project assets. The interface footer discloses AI-assisted illustration. No third-party visual assets are used.
+**Provenance:** generated specifically for Pantry Meal Gap with the factory image model (`factory-image`) on 2026-08-27 using `/opt/fleet/lib/gen-image.sh`. The optimized WebP and PNG-derived source are original project assets. No third-party visual assets are used.
+
+**Social preview:** `public/assets/pantry-meal-gap-social.jpg` is a 1200×630 crop composed from the same reviewed, original pantry-topography source on 2026-09-06. It contains no added text, brands, or third-party material.
 
 ## Responsive intent
 

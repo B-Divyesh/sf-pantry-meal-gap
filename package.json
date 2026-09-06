@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run tests/*.test.ts && npm run build && playwright test",
     "test:unit": "vitest run tests/*.test.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:claims": "npm run build && playwright test"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",
